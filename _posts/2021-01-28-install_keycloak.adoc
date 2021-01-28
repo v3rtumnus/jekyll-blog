@@ -1,0 +1,136 @@
+---
+title: Installing Keycloak on Ubuntu
+author: Michael Altenburger
+date: 2021-01-28
+categories: [Self-Hosting]
+tags: [keycloak, oauth, security]
+---
+
+= Installing Keycloak on Ubuntu
+
+https://www.keycloak.org/[Keycloak^] is an open source identity and access management solution for modern applications and services. The key features are:
+
+- Single Sign-On
+- Standard Protocols (OpenID Connect, OAuth 2.0 and SAML 2.0)
+- Identity Brokering
+- Centralized Management of admins and users
+
+All of these features were the reason, I decided to host my own instance of Keycloak to protect several applications on my server. Tutorials for connecting these different applications will follow in future blog posts. The only requirement is an installed JDK (minimum version 8.0). If this is fulfilled, we can get to it!
+
+== Download and setup Keycloak
+
+There are also docker images for Keycloak, but for the purpose of this tutorial, I decided to go with the standalone Keycloak version, packaged inside a Wildfly server. The latest available version can be found under the https://www.keycloak.org/downloads.html[Keycloak Download page^]. As of writing, the latest version is Keycloak 12.0.2. I install external applications always to folder */opt*. Therefore, the first steps are to download Keycloak and put it in the right location:
+
+[source,shell]
+-------------
+cd /opt
+sudo wget https://github.com/keycloak/keycloak/releases/download/12.0.2/keycloak-12.0.2.zip
+sudo unzip keycloak-12.0.2.zip
+sudo mv keycloak-12.0.2 /opt/keycloak
+-------------
+
+Additionally, we will create a dedicated user for keycloak, since we don't want to run it with `root` privileges:
+
+[source,shell]
+-------------
+sudo groupadd keycloak
+sudo useradd -r -g keycloak -d /opt/keycloak -s /sbin/nologin keycloak
+sudo chown -R keycloak:keycloak keycloak
+-------------
+
+The important bits in this command are, that the user does not have a login shell (since we don't need to login with this user on the machine directly) and that the home directory of this user is our Keycloak directory under `/opt/keycloak`. Additionally, all fines inside `/opt/keycloak` belong to the newly created user.
+
+== Configure Keycloak as a service
+
+We now downloaded Keycloak and would be ready to start it right away. However, since we want it to also start on every boot, a few more tweaks are necessary. Fortunately, the downloaded archive comes with a prepared `systemd` script, which can serve as basis. So first, we copy this file to the `systemd` configuration directory:
+
+[source,shell]
+-------------
+sudo cp /opt/keycloak/docs/contrib/scripts/systemd/wildfly.service /etc/systemd/system/keycloak.service
+-------------
+
+If we open this file now, we need to make some modifications to suite our needs (changes are in bold):
+
+[subs="quotes"]
+-------------
+[Unit]
+*Description=Keycloak Server*
+After=syslog.target network.target
+Before=httpd.service
+
+[Service]
+Environment=LAUNCH_JBOSS_IN_BACKGROUND=1
+*EnvironmentFile=/etc/keycloak/keycloak.conf*
+*User=keycloak*
+*Group=keycloak*
+LimitNOFILE=102642
+*PIDFile=/var/run/keycloak/keycloak.pid*
+*ExecStart=/opt/keycloak/bin/launch.sh $WILDFLY_MODE $WILDFLY_CONFIG $WILDFLY_BIND*
+StandardOutput=null
+
+[Install]
+WantedBy=multi-user.target
+-------------
+
+Since we also changed the path to the environment file and the launcher script, we need to copy them over as well from the Wildfly docs directory:
+
+[source,shell]
+-------------
+sudo mkdir /etc/keycloak
+sudo cp /opt/keycloak/docs/contrib/scripts/systemd/wildfly.conf /etc/keycloak/keycloak.conf
+sudo cp /opt/keycloak/docs/contrib/scripts/systemd/launch.sh /opt/keycloak/bin/
+sudo chown keycloak:keycloak /opt/keycloak/bin/launch.sh
+-------------
+
+The script under `/opt/keycloak/bin/launch.sh` needs to be changed a little, since we need to adapt the path to the Keycloak directory:
+
+[subs="quotes"]
+-------------
+#!/bin/bash
+
+if [ "x$WILDFLY_HOME" = "x" ]; then
+    *WILDFLY_HOME="/opt/keycloak"*
+fi
+
+if [[ "$1" == "domain" ]]; then
+    $WILDFLY_HOME/bin/domain.sh -c $2 -b $3
+else
+    $WILDFLY_HOME/bin/standalone.sh -c $2 -b $3
+fi
+-------------
+
+On my machine, I also had to specific a port offset in `/opt/keycloak/standalone/configuration/standalone.xml` since I had another process already running on port 8080:
+
+[source,shell]
+-------------
+<socket-binding-group name="standard-sockets" default-interface="public" port-offset="${jboss.socket.binding.port-offset:5}">
+-------------
+
+After this, we can enable the newly created `keycloak` service, enable and start it:
+
+[source,shell]
+-------------
+sudo systemctl daemon-reload
+sudo systemctl enable keycloak
+sudo systemctl start keycloak
+-------------
+
+So on my machine, Keycloak server will run under `http://localhost:8085`
+
+== Setting up admin user and create realm
+
+On a first successful start of Keycloak, you will see a screen like the following:
+
+image::/assets/img/keycloak/initial_screen.png[Initial Keycloak Screen]
+
+So the next step is to create an admin user, which is done using the commandline in this tutorial:
+
+[source,shell]
+-------------
+sudo /opt/keycloak/bin/add-user-keycloak.sh -r master -u <username> -p <password>
+sudo systemctl restart keycloak
+-------------
+
+Please pay attention that we create this user in the `master` realm, which is created by default. This realm should basically only be used to create admin users and other realms out of it.
+
+That's it! You should now be able to login to Keycloak with the credentials supplied above. The first thing for you should be to create a dedicated realm used for clients, so that you don't do that in the `master` realm. I am not going into full detail on this as part of this tutorial, since I will have several posts in the future dealing with applications or services connecting to Keycloak.

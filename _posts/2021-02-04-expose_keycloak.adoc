@@ -1,0 +1,77 @@
+---
+title: Expose Keycloak over Apache
+author: Michael Altenburger
+date: 2021-02-04
+categories: [Self-Hosting]
+tags: [keycloak, oauth, security, apache]
+---
+:page-liquid:
+
+= Expose Keycloak over Apache
+
+In my {{ site.url }}{% post_url 2021-01-28-install_keycloak %}[last blog post^], I described the setup of Keycloak on Ubuntu. Now it is time to also expose it using Apache and mod_proxy.
+
+== Apache forward using mod_proxy
+
+At first, we create a virtualhost under `/etc/apache2/sites-available` with the name `keycloak.forward.conf`:
+
+[source,shell script]
+---------------------
+<VirtualHost <keycloak.domain>:443>
+    ServerName <keycloak.domain>
+
+    ProxyPreserveHost On
+    ProxyRequests Off
+
+    RequestHeader add "X-forwarded-proto" "https"
+    RequestHeader set x-ssl-client-cert "%{SSL_CLIENT_CERT}s"
+
+    ProxyPass /auth http://localhost:8085/auth
+    ProxyPassReverse /auth http://localhost:8085/auth
+</VirtualHost>
+
+---------------------
+
+Afterwards, this virtual host needs to be enabled:
+
+[source,shell script]
+---------------------
+sudo a2ensite keycloak.forward
+sudo systemctl reload apache2
+---------------------
+
+Now you should be able to access Keycloak under `https://<keycloak.domain>/auth`.
+
+== Restrict access to the administration console
+
+Since Keycloak is an identity provider, you should only expose the necessary endpoints for authentication publicly. Therefore, the administration console should be blocked for external traffic. This can be done by editing the Wildfly configuration file of Keycloak under  `/opt/keycloak/standalone/configuration/standalone.xml` and changing the section for the Undertow servlet container:
+
+[source,xml]
+---------------------
+<subsystem xmlns="urn:jboss:domain:undertow:11.0" default-server="default-server" default-virtual-host="default-host" default-servlet-container="default" default-security-domain="other" statistics-enabled="${wildfly.undertow.statistics-enabled:${wildfly.statistics-enabled:false}}">
+            <buffer-cache name="default"/>
+            <server name="default-server">
+                <http-listener name="default" socket-binding="http" redirect-socket="https" enable-http2="true"/>
+                <https-listener name="https" socket-binding="https" security-realm="ApplicationRealm" enable-http2="true"/>
+                <host name="default-host" alias="localhost">
+                    <location name="/" handler="welcome-content"/>
+                    <http-invoker security-realm="ApplicationRealm"/>
+		    <filter-ref name="ipAccess"/>
+                </host>
+            </server>
+            <filters>
+        	<expression-filter name="ipAccess" expression="path-prefix('/auth/admin') -> ip-access-control(acl={'10.8.0.0/24 allow'})"/>
+    	    </filters>
+            <servlet-container name="default">
+                <jsp-config/>
+                <websockets/>
+            </servlet-container>
+            <handlers>
+                <file name="welcome-content" path="${jboss.home.dir}/welcome-content"/>
+            </handlers>
+        </subsystem>
+---------------------
+
+The important part here is the filter, which is applied to the subnet `10.8.0.0/24`, which is a VPN I have in use. If you don't have a VPN set up, I would recommend limiting access to localhost.
+
+This is basically it! We succesfully exposed Keycloak (especially the token endpoints) publicly for external clients.

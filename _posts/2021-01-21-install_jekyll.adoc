@@ -1,0 +1,91 @@
+---
+title: Creating a AsciiDoc powered Wiki using Jekyll
+author: Michael Altenburger
+date: 2021-01-21
+categories: [Blogging]
+tags: [jekyll,asciidoc]
+---
+
+= Creating a AsciiDoc powered Wiki using Jekyll
+
+https://jekyllrb.com/[Jekyll^] is a static page generator, which can be used for blogging together with several markup languages, like Markdown or HTML. By the use of a plugin, it is also capable of generating static pages out of http://www.methods.co.nz/asciidoc/[AsciiDoc^] sources, which I am about to showcase in this blog post. Short disclaimer: This blog is also built on top of Jekyll by using AsciiDoc sources. I don't want to go into too much detail on why I choose AsciiDoc over Markdown because this is covered already in several sites accross the web but the main advantage for me was the cleaner syntax (subjective) and the richer feature-set out of the box (objective).
+
+Installing Jekyll on Ubuntu
+---------------------------
+
+Jekyll is built in Ruby. So the first step is to install Ruby and a few other prerequisites using the *apt* package manager:
+
+[source,shell]
+-----------------
+sudo apt-get install ruby-full build-essential zlib1g-dev
+-----------------
+
+Additionally, a separate directory should be created to install Ruby packages (so called _gems_) in it and avoid installing them directly as root user:
+
+[source,shell]
+------------
+echo 'export GEM_HOME="$HOME/gems"' >> ~/.bashrc
+echo 'export PATH="$HOME/gems/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+------------
+
+It should now be possible to install Jekyll and Bundler using the _gem_ command line tool:
+
+[source,shell]
+-------------
+gem install jekyll bundler
+-------------
+
+Bundler is a dependency management tool for Ruby, which is used to manage the gems for Jekyll.
+
+Setting up a blog site
+----------------------
+Luckily for a backend guy like me, there are plenty of Jekyll Themes out there to choose from. I choose Chirpy as theme, so the first step was to basically fork https://github.com/cotes2020/jekyll-theme-chirpy[the plugins GitHub repo^] and then clone it the machines, where you want to write your stuff and also where you want to build your site.
+
+[source,shell]
+-------------
+git clone git@github.com:v3rtumnus/jekyll-blog.git
+-------------
+
+I won't go into too much detail regarding this specific template (if you want to use it as well, it has a pretty good README) but one command you anyway need to issue if you want to set up your local environment is the following:
+
+[source,shell]
+-------------
+bundle install
+-------------
+
+For development purposes, the site can already be run by executing the following command:
+
+[source,shell]
+-------------
+jekyll serve
+-------------
+
+I only use this for development purposes because my live blog is behind an apache server. Building the static pages and exporting them to a defined directory (e.g. the directory of an Apache virtualhost) can be done with the following command:
+
+[source,shell]
+-------------
+jekyll build -d /var/www/html
+-------------
+
+
+Enabling AsciiDoc support
+-------------------------
+
+By default, Jekyll is able to deal with Markdown files and most themes already come with some example Markdown files. However, as stated before, the posts for this blog should be written in AsciiDoc. For this, the plugin *jekyll-asciidoc* needs to be put inside the _jekyll-plugins_ section of the _Gemfile_. After that, it should look like the following:
+
+[source,shell]
+-------------
+group :jekyll_plugins do
+gem "jekyll-asciidoc"
+gem "jekyll-paginate"
+gem "jekyll-redirect-from"
+gem "jekyll-seo-tag"
+gem "jekyll-archives"
+gem "jekyll-sitemap"
+end
+-------------
+
+A change to the Gemfile needs to be applied by issuing the _bundle_ command. Now you should be able to insert a AsciiDoc file in your __posts_ directory and see the result.
+
+This is basically all you need to have a running AsciiDoc blog powered by Jekyll.
