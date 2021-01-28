@@ -1,0 +1,22 @@
+---
+title: Securing your Spring Boot application with Spring Security and Keycloak
+author: Michael Altenburger
+date: 2021-02-11
+categories: [Spring]
+tags: [keycloak, spring security, spring, oauth]
+---
+:page-liquid:
+
+= Securing your Spring Boot application with Spring Security and Keycloak
+
+I already covered the {{ site.url }}{% post_url 2021-01-28-install_keycloak %}[installation^] and {{ site.url }}{% post_url 2021-02-04-expose_keycloak %}[secure exposal^] of Keycloak in previous blog posts. In this blog post, I want to demonstrate how to use Keycloak together with Spring Security within a Spring Boot application. I will use my hobby project https://github.com/v3rtumnus/plan-man[Plan Man^] as a starting point for this tutorial. This is basically a Thymeleaf powered Spring Boot application, which uses Spring Security with a DB storage as of now. However, for the sake of simplicity I will assume that there is no security at all to make the migration more straightforward.
+
+One important note here is the integration of Keycloak into Spring Security. Most of the tutorials online simply directly use the keycloak library for securing Spring applications, which means that you need to define your authorization constraints in a keycloak-proprietary way. Using the official Spring Security Keycloak Adapter, you can just use the Spring Security constraints you are used to.
+
+== Setup client and user in Keycloak
+
+== Testing it from the commandline
+
+== Declare necessary dependencies and setup config
+
+== See how it works
