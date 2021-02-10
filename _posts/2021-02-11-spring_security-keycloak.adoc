@@ -13,10 +13,134 @@ I already covered the {{ site.url }}{% post_url 2021-01-28-install_keycloak %}[i
 
 One important note here is the integration of Keycloak into Spring Security. Most of the tutorials online simply directly use the keycloak library for securing Spring applications, which means that you need to define your authorization constraints in a keycloak-proprietary way. Using the official Spring Security Keycloak Adapter, you can just use the Spring Security constraints you are used to.
 
+Short disclaimer: Parts of this tutorial are based on an official https://www.keycloak.org/2017/05/easily-secure-your-spring-boot.html[blog post] by Keycloak itself.
+
 == Setup client and user in Keycloak
+
+In {{ site.url }}{% post_url 2021-01-28-install_keycloak %}[this blog post^], I already discussed that you need to create a separate realm for your clients. In my case, I created a realm named *Internal*. The next step is the creation of a client (which is basically the application, for which you want to authenticate). In our case we create a client named _plan-man_ which can be created by clicking on the *Create* button in the *Clients* menu:
+
+image::/assets/img/keycloak/client_setup.png[Keycloak client setup]
+
+On the next screen, almost all settings can be left as-is with one exception: You have to fill out the field *Valid Redirect URIs* with URL patterns for your environments. This setting determines, which redirect URLs are valid when making a request for an access token. In my test setup, I insert _https://localhost:8080/_ here, since this is my local address of the application. Additionally, the *Access type* should be set to _confidential_. After doing this, you need to save and then a new tab *Credentials* should appear, where you can generate a client secret
+
+In the next step, we create a role for our users. For the sake of simplicity we only create one role with the name _user_:
+
+image::/assets/img/keycloak/role_setup.png[Keycloak role setup]
+
+These roles can then be used for authorization in your application. We also need to setup a user, who can have this role. I created a user named _michael_:
+
+image::/assets/img/keycloak/user_setup.png[Keycloak user setup]
+
+In the next screen after the user creation, you also need to define the password for this user. Also make sure, that you turn off the *Temporary* flag because otherwise the user needs to change his password after the first login.
+
+And the last step on Keycloak side, is the actual role mapping.
+
+image::/assets/img/keycloak/rolemapping_setup.png[Keycloak role mapping setup]
+
 
 == Testing it from the commandline
 
-== Declare necessary dependencies and setup config
+Now we are at a stage, where we can test the setup via the commandline. The retrieval of an access token can be simulated using the following command, which will output (among other things) a valid access and refresh token for the user _michael_ and client _plan-man_:
 
-== See how it works
+[source, shell script]
+----------------------
+[michael@silvanus ~]$ curl -d 'client_id=plan-man' -d 'client_secret=<secret>' -d 'username=michael' -d 'password=<password>' -d 'grant_type=password' 'https://<Keycloak-URL>/auth/realms/Internal/protocol/openid-connect/token' | python -m json.tool
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100  2273  100  2137  100   136   2915    185 --:--:-- --:--:-- --:--:--  3096
+{
+    "access_token": <access token>,
+    "expires_in": 300,
+    "refresh_expires_in": 1800,
+    "refresh_token": <refresh token>,
+    "token_type": "Bearer",
+    "not-before-policy": 0,
+    "session_state": "717c1a3b-f148-47f8-b36f-54dd689e1a83",
+    "scope": "email profile"
+}
+----------------------
+
+You can also see that the access token expires in 5 minutes and the refresh token in 30 minutes, which are the default values. This can be changed according to your needs. We can also check if the role mapping worked by introspecting this token using a tool like https://jwt.io[jwt.io^]. If you copy your access token as input, you will see the following line in the actual JWT:
+
+[source, shell script]
+----------------------
+"realm_access": {
+    "roles": [
+      "offline_access",
+      "uma_authorization",
+      "user"
+    ]
+  },
+----------------------
+
+There we see that (additional to the default realm roles) our role _user_ is part of the JWT.
+
+== Combining it with Spring Security
+
+As already mentioned, I will use my project https://github.com/v3rtumnus/plan-man[Plan Man^] as showcase for this tutorial. The first step is to introduce Spring Security and the corresponding Keycloak adapter to the project:
+
+[source, groovy]
+----------------
+implementation 'org.springframework.boot:spring-boot-starter-security'
+implementation 'org.keycloak:keycloak-spring-security-adapter:12.0.2'
+----------------
+
+In a next step, the configuration for Spring Security needs to be generated:
+
+[source, java]
+----------------
+@Configuration
+public class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
+
+    @Autowired
+    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+        KeycloakAuthenticationProvider keycloakAuthenticationProvider = keycloakAuthenticationProvider();
+        keycloakAuthenticationProvider.setGrantedAuthoritiesMapper(new SimpleAuthorityMapper());
+        auth.authenticationProvider(keycloakAuthenticationProvider);
+    }
+
+    @Bean
+    public KeycloakConfigResolver keycloakConfigResolver() {
+        return new KeycloakSpringBootConfigResolver();
+    }
+
+    @Bean
+    @Override
+    protected SessionAuthenticationStrategy sessionAuthenticationStrategy() {
+        return new RegisterSessionAuthenticationStrategy(new SessionRegistryImpl());
+    }
+
+    @Bean
+    public ServletListenerRegistrationBean<HttpSessionEventPublisher> httpSessionEventPublisher() {
+        return new ServletListenerRegistrationBean<>(new HttpSessionEventPublisher());
+    }
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        super.configure(http);
+        http.csrf().disable()
+                .authorizeRequests()
+                .antMatchers("/sso/login").permitAll()
+                .antMatchers("/credit/**").hasRole("user")
+                .antMatchers("/expenses/**").hasRole("user")
+                .antMatchers("/api/**").hasRole("user")
+                .anyRequest().permitAll();
+    }
+}
+----------------
+
+One important note regarding this configuration is the use of a `SimpleAuthorityMapper` since, by default, Spring would expect the roles to start with _ROLE__. This behaviour is overwritten by using the SimpleAuthorityMapper`.
+
+The last step regarding configuration is to connect the application to the keycloak instance:
+
+[source, properties]
+----------------
+keycloak.auth-server-url=<keycloak-host>/auth
+keycloak.realm=Internal
+keycloak.resource=plan-man
+keycloak.ssl-required=external
+keycloak.principal-attribute=preferred_username
+keycloak.credentials.secret=<client-secret>
+----------------
+
+This is it! If you now navigate to a secured path, you will get prompted by the Keycloak login dialog.
