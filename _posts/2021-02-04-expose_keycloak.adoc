@@ -74,4 +74,21 @@ Since Keycloak is an identity provider, you should only expose the necessary end
 
 The important part here is the filter, which is applied to the subnet `10.8.0.0/24`, which is a VPN I have in use. If you don't have a VPN set up, I would recommend limiting access to localhost.
 
+In the same file, some changes are needed for the Proxy to actually work:
+
+[source]
+----------------------
+<subsystem xmlns="urn:jboss:domain:undertow:3.0">
+  ...
+  <server name="default-server">
+    <!------- Change this line ----->
+    <http-listener name="default" socket-binding="http" proxy-address-forwarding="true" redirect-socket="proxy-https" />
+  ...
+<socket-binding-group name="standard-sockets" default-interface=" ...
+  ...
+  <!------- Add this line ----->
+  <socket-binding name="proxy-https" port="443"/>
+  ...
+----------------------
+
 This is basically it! We succesfully exposed Keycloak (especially the token endpoints) publicly for external clients.
