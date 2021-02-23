@@ -1,0 +1,91 @@
+---
+title: Setting up your own simple Git server in Ubuntu
+author: Michael Altenburger
+date: 2021-02-24
+categories: [Self-Hosting]
+tags: [git]
+---
+:page-liquid:
+
+= Setting up your own simple Git server in Ubuntu
+
+Nowadays, almost every developer has an account and repositories on https://www.github.com[Github]. In some cases, however, you don't want your Git repositories to be hosted on an online platform, e.g. for a private wiki. I know that Github offers private repositories but still, the data would be residing on hardware not owned by you.
+
+Therefore, this tutorial shows the setup of a really simple Git repository on a local server. This does not include some fancy UI (like Gitlab) or anything like that. It is basically just a simple Git repository (like you could create on every workspace), which will be used as origin.
+
+Short disclaimer: This tutorial is based on the fantastic guide on the official https://git-scm.com/book/en/v2/Git-on-the-Server-Setting-Up-the-Server[Git website]
+
+== Creating a user and setting up keys
+
+In a first step, we setup a user named `git` and create files to place the authorized SSH keys in for the clients of the Git server:
+
+[source, shell script]
+----------------------
+$ sudo adduser git
+$ su git
+$ cd
+$ mkdir .ssh && chmod 700 .ssh
+$ touch .ssh/authorized_keys && chmod 600 .ssh/authorized_keys
+----------------------
+
+In a next step, every developer needs to copy its SSH key to the server for key-based authentication over SSH:
+
+[source, shell script]
+----------------------
+ssh-copy-id git@git-server-host
+----------------------
+
+== Setting up the Git repo
+
+Now we can setup a first Git repository:
+
+[source, shell script]
+----------------------
+$ sudo mkdir -p /srv/git/
+$ sudo mkdir -p /srv/git/wiki.git
+$ sudo chown -R git /srv/git/
+$ su git
+$ cd /srv/git/project.git/
+$ git init --bare
+Initialized empty Git repository in /srv/git/project.git/
+----------------------
+
+Afterwards, every client, whose key was copied before, should be able to clone the repository and push changes:
+
+[source, shell script]
+----------------------
+$ git clone git@git-server-host:/srv/git/project.git
+$ cd project
+$ vim README
+$ git commit -am 'First README'
+$ git push origin master
+----------------------
+
+From a functionality standpoint, this is basically it! However, we should also enhance the security of our Git repository a bit.
+
+In a first step, the default shell for the user `git` is set to `git-shell`, so that not every Git user can open a normal shell (like Bash) to the git server:
+
+[source, shell script]
+----------------------
+$ which git-shell   # make sure git-shell is installed on your system and retrieve its path
+$ sudo -e /etc/shells  # and add the path to git-shell from last command
+$ sudo chsh git -s $(which git-shell) #change the shell for git user
+----------------------
+
+If you know try to SSH directly onto the server, you'll get an error message like the following:
+
+[source, shell script]
+----------------------
+fatal: Interactive git shell is not enabled.
+hint: ~/git-shell-commands should exist and have read and execute access.
+Connection to 193.164.132.162 closed.
+----------------------
+
+The last step is to disable SSH port forwarding for every user in the file `authorized_keys` (this needs to be placed before the actually key):
+
+[source, shell script]
+----------------------
+no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty
+----------------------
+
+This is it! You just created a basic Git server and secured it successfully.
