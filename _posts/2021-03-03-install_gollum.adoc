@@ -1,0 +1,81 @@
+---
+title: Gollum - One Git-based Wiki to rule them all
+author: Michael Altenburger
+date: 2021-03-03
+categories: [Self-Hosting]
+tags: [git,wiki,gollum,asciidoc]
+---
+:page-liquid:
+
+= Gollum - One Git-based Wiki to rule them all
+
+I was long in a bitter debate with myself about posting stuff on a blog or in a wiki. In the end, I decided for both of them. The blog contains tutorials/articles, which could be of use for somebody else as well, whereas my Wiki should only contain content relevant for me.
+
+When the question arose, which Wiki to choose, I had several requirements:
+
+* It should be based on Git
+* Writing content in Asciidoc should be supported
+* I really only need a Wiki, not a software supporting dozens of use cases
+* It should be an open-source product
+
+The first two requirements steem from the fact that the same applies for my blog as described in {{ site.url }}{% post_url 2021-01-21-install_jeykll %}[my blog post about Jekyll^]. This makes it easy to switch articles from my Blog to my Wiki or vice versa. It also has the benefit that I don't need to use two different markup languages at once. The Wiki, which fit these needs best, is https://github.com/gollum/gollum[Gollum] - the same Wiki, which is used as backbone of the https://docs.github.com/en/github/building-a-strong-community/about-wikis[Github Wiki].
+
+In this tutorial, I will guide you through the process of setting up Gollum on Ubuntu and enabling it as a service
+
+== Installing Gollum
+
+If it is not installed on your system already, the first step is to install Ruby (as Gollum is written and running on Ruby) and necessary build tools:
+
+[source,shell]
+-----------------
+sudo apt-get install ruby-full build-essential zlib1g-dev cmake pkg-config libssl-dev
+-----------------
+
+In the next step, Gollum itself as well as AsciiDoc is installed using RubyGems:
+
+[source,shell]
+-----------------
+sudo gem install gollum asciidoc
+-----------------
+
+For Gollum to actually work, you need a Git repo, where your source files are located. I described in my {{ site.url }}{% post_url 2021-02-24-own_git_server %}[last blog post^] how you can simply setup a Git server yourself. As soon as you got your Git repo setup, you can start Gollum by executing:
+
+[source,shell]
+-----------------
+gollum /path/to/wiki
+-----------------
+
+== Enable Gollum as a service
+
+Gollum can be configured as `systemd` service by creating a file `/etc/systemd/system/gollum.service`:
+
+[source,shell]
+-----------------
+[Unit]
+Description=Gollum wiki server
+After=network.target
+After=syslog.target
+
+[Service]
+Type=simple
+User=gollum
+Group=gollum
+WorkingDirectory=/home/michael/wiki/
+ExecStart=/usr/local/bin/gollum
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target
+-----------------
+
+This can be copied basically 1:1. The only thing you need to change, is the `User`, `Group`, '`WorkingDirectory`. Afterwards, we can reload the system daemon and start/enable the Gollum service:
+
+[source,shell]
+-----------------
+sudo systemctl daemon-reload
+
+sudo systemctl start gollum
+sudo systemctl enable gollum
+-----------------
+
+That's it! Gollum is now basically up and running. One downside when it comes to Gollum is the missing authentication and authorization support. This will be addressed in the next blog post, when we look at the integration of Keycloak and Gollum.
