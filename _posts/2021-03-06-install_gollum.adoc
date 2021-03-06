@@ -1,7 +1,7 @@
 ---
 title: Gollum - One Git-based Wiki to rule them all
 author: Michael Altenburger
-date: 2021-03-03
+date: 2021-03-06
 categories: [Self-Hosting]
 tags: [git,wiki,gollum,asciidoc]
 ---
@@ -18,7 +18,7 @@ When the question arose, which Wiki to choose, I had several requirements:
 * I really only need a Wiki, not a software supporting dozens of use cases
 * It should be an open-source product
 
-The first two requirements steem from the fact that the same applies for my blog as described in {{ site.url }}{% post_url 2021-01-21-install_jeykll %}[my blog post about Jekyll^]. This makes it easy to switch articles from my Blog to my Wiki or vice versa. It also has the benefit that I don't need to use two different markup languages at once. The Wiki, which fit these needs best, is https://github.com/gollum/gollum[Gollum] - the same Wiki, which is used as backbone of the https://docs.github.com/en/github/building-a-strong-community/about-wikis[Github Wiki].
+The first two requirements steem from the fact that the same applies for my blog as described in {{ site.url }}{% post_url 2021-01-21-install_jekyll %}[my blog post about Jekyll^]. This makes it easy to switch articles from my Blog to my Wiki or vice versa. It also has the benefit that I don't need to use two different markup languages at once. The Wiki, which fit these needs best, is https://github.com/gollum/gollum[Gollum] - the same Wiki, which is used as backbone of the https://docs.github.com/en/github/building-a-strong-community/about-wikis[Github Wiki].
 
 In this tutorial, I will guide you through the process of setting up Gollum on Ubuntu and enabling it as a service
 
