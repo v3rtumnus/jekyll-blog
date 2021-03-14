@@ -18,7 +18,7 @@ When the question arose, which Wiki to choose, I had several requirements:
 * I really only need a Wiki, not a software supporting dozens of use cases
 * It should be an open-source product
 
-The first two requirements steem from the fact that the same applies for my blog as described in {{ site.url }}{% post_url 2021-01-21-install_jekyll %}[my blog post about Jekyll^]. This makes it easy to switch articles from my Blog to my Wiki or vice versa. It also has the benefit that I don't need to use two different markup languages at once. The Wiki, which fit these needs best, is https://github.com/gollum/gollum[Gollum] - the same Wiki, which is used as backbone of the https://docs.github.com/en/github/building-a-strong-community/about-wikis[Github Wiki].
+The first two requirements steem from the fact that the same applies for my blog as described in {{ site.url }}{% post_url 2021-01-21-install_jekyll %}[my blog post about Jekyll^]. This makes it easy to switch articles from my Blog to my Wiki or vice versa. It also has the benefit that I don't need to use two different markup languages at once. The Wiki, which fit these needs best, is https://github.com/gollum/gollum[Gollum^] - the same Wiki, which is used as backbone of the https://docs.github.com/en/github/building-a-strong-community/about-wikis[Github Wiki^].
 
 In this tutorial, I will guide you through the process of setting up Gollum on Ubuntu and enabling it as a service
 
@@ -78,4 +78,4 @@ sudo systemctl start gollum
 sudo systemctl enable gollum
 -----------------
 
-That's it! Gollum is now basically up and running. One downside when it comes to Gollum is the missing authentication and authorization support. This will be addressed in the next blog post, when we look at the integration of Keycloak and Gollum.
+That's it! Gollum is now basically up and running. One downside when it comes to Gollum is the missing authentication and authorization support. This is addressed in {{ site.url }}{% post_url 2021-03-14-oauth_apache %}[another blog post^], where we look at the integration of Keycloak and Gollum.

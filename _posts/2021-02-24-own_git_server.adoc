@@ -9,11 +9,11 @@ tags: [git]
 
 = Setting up your own simple Git server in Ubuntu
 
-Nowadays, almost every developer has an account and repositories on https://www.github.com[Github]. In some cases, however, you don't want your Git repositories to be hosted on an online platform, e.g. for a private wiki. I know that Github offers private repositories but still, the data would be residing on hardware not owned by you.
+Nowadays, almost every developer has an account and repositories on https://www.github.com[Github^]. In some cases, however, you don't want your Git repositories to be hosted on an online platform, e.g. for a private wiki. I know that Github offers private repositories but still, the data would be residing on hardware not owned by you.
 
 Therefore, this tutorial shows the setup of a really simple Git repository on a local server. This does not include some fancy UI (like Gitlab) or anything like that. It is basically just a simple Git repository (like you could create on every workspace), which will be used as origin.
 
-Short disclaimer: This tutorial is based on the fantastic guide on the official https://git-scm.com/book/en/v2/Git-on-the-Server-Setting-Up-the-Server[Git website]
+Short disclaimer: This tutorial is based on the fantastic guide on the official https://git-scm.com/book/en/v2/Git-on-the-Server-Setting-Up-the-Server[Git website^]
 
 == Creating a user and setting up keys
 

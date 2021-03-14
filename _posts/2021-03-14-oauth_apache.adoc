@@ -1,0 +1,91 @@
+---
+title: OAuth support for Apache virtual hosts
+author: Michael Altenburger
+date: 2021-03-14
+categories: [Self-Hosting]
+tags: [apache,oauth,keycloak,gollum]
+---
+:page-liquid:
+
+= OAuth support for Apache virtual hosts
+
+https://httpd.apache.org/[Apache^] does not come with OAuth support out of the box. However, this can be handy in several scenarios, e.g. if you have a proxy forward to some other application, which does not support OAuth as well. This is the case for with Gollum, which I described in {{ site.url }}{% post_url 2021-03-06-install_gollum %}[my last blog post^]. Basically my use case there would be to authenticate using my local Keycloak instance.
+
+Fortunately, there is an Apache mod, which enables exactly that: https://github.com/zmartzone/mod_auth_openidc[mod_auth_openidc^]. With the help of this mod, Apache can work as an *OpenID Connect Relying Party*, authenticating users against any OpenID Connect Provider (e.g. a local Keycloak instance but also Google or any other similar identity provider). In this tutorial, I'll shortly explain how to configure this mod, by using the example of Gollum.
+
+== Installing and enabling mod_auth_openidc in Ubuntu
+
+Ubuntu makes it rather easy to install this mod by just execting:
+
+[source,shell]
+-----------------
+sudo apt-get install libapache2-mod-auth-openidc
+-----------------
+
+Normally, during the installation, the module is also already activated. If this is not the case, this can be done manually:
+
+[source,shell]
+-----------------
+sudo a2enmod auth_openidc
+-----------------
+
+== Configuring the virtual host to support OAuth
+
+The assumption for this step is that we already setup a client named `gollum` in Keycloak. Now suppose that we have the following virtual host configuration for Gollum in place:
+
+[source,shell]
+-----------------
+<IfModule mod_ssl.c>
+<VirtualHost wiki.domain.here:443>
+    ServerName wiki.domain.here
+
+    ProxyPreserveHost On
+    RequestHeader set X-Forwarded-Proto https
+    RequestHeader set X-Forwarded-Port 443
+    ProxyPass / http://localhost:4567/
+    ProxyPassReverse / http://localhost:4567/
+
+    SSLCertificateFile /path/to/ssl/certificate
+    SSLCertificateKeyFile /path/to/ssl/certificate/key/file
+</VirtualHost>
+</IfModule>
+-----------------
+
+To enable OAuth authentication, we need to enrich it to the following content:
+
+[source,shell]
+-----------------
+<IfModule mod_ssl.c>
+<VirtualHost wiki.domain.here:443>
+    ServerName wiki.domain.here
+
+    #this is required by mod_auth_openidc
+    OIDCCryptoPassphrase a-random-secret-used-by-apache-oidc-and-balancer
+
+    OIDCProviderMetadataURL ${KEYCLOAK_URL}/auth/realms/${KEYCLOAK_REALM}/.well-known/openid-configuration
+
+    OIDCClientID gollum
+    OIDCClientSecret gollum-client-secret
+    OIDCRedirectURI https://wiki.domain.here/redirect_uri
+
+    # maps the prefered_username claim to the REMOTE_USER environment variable
+    OIDCRemoteUserClaim preferred_username
+
+    ProxyPreserveHost On
+    RequestHeader set X-Forwarded-Proto https
+    RequestHeader set X-Forwarded-Port 443
+    ProxyPass / http://localhost:4567/
+    ProxyPassReverse / http://localhost:4567/
+
+    <Location />
+        AuthType openid-connect
+        Require valid-user
+    </Location>
+
+    SSLCertificateFile /path/to/ssl/certificate
+    SSLCertificateKeyFile /path/to/ssl/certificate/key/file
+</VirtualHost>
+</IfModule>
+-----------------
+
+The only remaining step is to restart Apache for the mod enabling to take effect and that should be it! Your application behind Apache (Gollum in this scenario) is now protected via OAuth.

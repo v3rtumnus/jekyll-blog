@@ -13,7 +13,7 @@ I already covered the {{ site.url }}{% post_url 2021-01-28-install_keycloak %}[i
 
 One important note here is the integration of Keycloak into Spring Security. Most of the tutorials online simply directly use the keycloak library for securing Spring applications, which means that you need to define your authorization constraints in a keycloak-proprietary way. Using the official Spring Security Keycloak Adapter, you can just use the Spring Security constraints you are used to.
 
-Short disclaimer: Parts of this tutorial are based on an official https://www.keycloak.org/2017/05/easily-secure-your-spring-boot.html[blog post] by Keycloak itself.
+Short disclaimer: Parts of this tutorial are based on an official https://www.keycloak.org/2017/05/easily-secure-your-spring-boot.html[blog post^] by Keycloak itself.
 
 == Setup client and user in Keycloak
 
