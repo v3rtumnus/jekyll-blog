@@ -27,27 +27,16 @@ As for the setup, I won't go into too much detail and directly point to the rele
 
 After you finished the guide linked above, you should have a running Matomo installation using the default settings. Additionally, tracking code should be provided in the last screen of the installation wizard.
 
-Now you can install the `jekyll-analytics` https://github.com/hendrikschneider/jekyll-analytics[plugin^] by adding the following to your `Gemfile`:
+Now you can insert the tracking code from Matomo in your applicaiton. For Jekyll, I tried to use the `jekyll-analytics` https://github.com/hendrikschneider/jekyll-analytics[plugin^] but it did not work for me. Therefore, I manually put it directly before the `</head>` tag in `head.html`:
 
 [source,shell]
 -----------------
-gem 'jekyll-analytics'
+{% if jekyll.environment == "production" %}
+//Matomo tracking code
+{% endif %}
 -----------------
 
-Afterwards it will be downloaded the next time, the `bundle` command is issued. To activate it, the following lines are added in `config.yml`:
-
-[source,shell]
------------------
-plugins:
-  - jekyll-analytics
-...
-jekyll_analytics:
-  Matomo:
-    url: matomo.url.in.place
-    siteId: "1234" //You will see this when logging into Matomo
------------------
-
-One important note regarding this plugin is that you need to set the environment to `production` for it to actually sent analytics data:
+I declared the tracking code to only show up if you set the environment to `production`, so that it does not send tracking data while in development:
 
 [source,shell]
 -----------------
