@@ -20,7 +20,7 @@ pipeline {
         stage('Deploy to apache') {
             steps {
                 withEnv(['PATH+EXTRA=/var/lib/jenkins/gems/bin', 'GEM_HOME=/var/lib/jenkins/gems']) {
-                  sh 'jekyll build -d /var/www/html'
+                  sh 'JEKYLL_ENV=production jekyll build -d /var/www/html'
                 }
             }
         }

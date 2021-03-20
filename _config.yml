@@ -195,3 +195,10 @@ jekyll-archives:
     tag: /tags/:name/
     category: /categories/:name/
 
+plugins:
+  - jekyll-analytics
+
+jekyll_analytics:
+  Matomo:
+    url: analytics.altenburger.io
+    siteId: "1"

@@ -1,0 +1,65 @@
+---
+title: Cookieless website analytics with Matomo and Jekyll
+author: Michael Altenburger
+date: 2021-03-28
+categories: [Self-Hosting]
+tags: [jekyll,matomo,cookie]
+---
+:page-liquid:
+
+= Cookieless website analytics with Matomo and Jekyll
+
+Recently, I felt the need to add analytics to my Blog because I want to get a feeling if someone is actually reading these articles or if they are only for my personal amusement. However, I don't want to bug my visitors with cookies, since my goal is not to collect personal data or any trackable information in this regard. Therefore, I decided to go with https://matomo.org/[Matomo^], since I used this before, and I also learned that it has an option to disable all cookies.
+
+It has to be noted that, by disabling cookies, you also loose information for your analytics. It is not possible to identify unique visitors (since basically every page-view will be a unique visit), and you are not able to detect frequent visitors of your site. Apart from not bugging your visitors, there are other upsides to this approach:
+
+* You don't need one of those nice cookie banners, you nowadays get on almost every website
+* There is no need for a dedicated *Privacy* section in your imprint
+
+So if you decide to choose this approach, I'll guide you through the setup of Matomo and also the process of disabling cookies and integrating it into a Jekyll site.
+
+== Setting up Matomo and integrating into Jekyll
+
+As for the setup, I won't go into too much detail and directly point to the relevant section in the official https://matomo.org/docs/installation/[documentation^]. The important thing to note is that you need the following things:
+
+* Some sort of Webserver (Apache, Nginx, ...)
+* A MySQL server, which is used to save the data from Matomo
+
+After you finished the guide linked above, you should have a running Matomo installation using the default settings. Additionally, tracking code should be provided in the last screen of the installation wizard.
+
+Now you can install the `jekyll-analytics` https://github.com/hendrikschneider/jekyll-analytics[plugin^] by adding the following to your `Gemfile`:
+
+[source,shell]
+-----------------
+gem 'jekyll-analytics'
+-----------------
+
+Afterwards it will be downloaded the next time, the `bundle` command is issued. To activate it, the following lines are added in `config.yml`:
+
+[source,shell]
+-----------------
+plugins:
+  - jekyll-analytics
+...
+jekyll_analytics:
+  Matomo:
+    url: matomo.url.in.place
+    siteId: "1234" //You will see this when logging into Matomo
+-----------------
+
+One important note regarding this plugin is that you need to set the environment to `production` for it to actually sent analytics data:
+
+[source,shell]
+-----------------
+JEKYLL_ENV=production jekyll serve
+-----------------
+
+Now your Jekyll installation should be able to send analytics data to your Matomo server.
+
+== Disable cookies in Matomo
+
+To disable all cookies for every site in Matomo, go to _Administration_ -> _Privacy_ -> _Anonymize data_ and enable the checkbox _Force tracking without cookies_:
+
+image::/assets/img/matomo/cookie.png[Cookie checkbox]
+
+This is it! You successfully integrated Cookieless Matomo analytics into Jekyll.
