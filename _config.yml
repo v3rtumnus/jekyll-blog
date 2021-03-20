@@ -195,4 +195,5 @@ jekyll-archives:
     tag: /tags/:name/
     category: /categories/:name/
 
-keep_files: google073d481d46cb843e.html
+keep_files:
+  - google073d481d46cb843e.html
