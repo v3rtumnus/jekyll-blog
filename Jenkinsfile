@@ -4,7 +4,7 @@ pipeline {
     stages {
         stage('Clone sources') {
             steps {
-                git credentialsId: 'jenkins-ssh',
+                git credentialsId: 'github-ssh',
                     url: 'git@github.com:v3rtumnus/jekyll-blog.git'
             }
         }
