@@ -11,7 +11,7 @@ pipeline {
 
         stage('Build blog site') {
             steps {
-                withEnv(['PATH+EXTRA=/var/lib/jenkins_home/gems/bin', 'GEM_HOME=/var/lib/jenkins_home/gems']) {
+                withEnv(['PATH+EXTRA=/var/jenkins_home/gems/bin', 'GEM_HOME=/var/jenkins_home/gems']) {
                   sh 'bundle install'
                 }
             }
@@ -19,7 +19,7 @@ pipeline {
 
         stage('Deploy to apache') {
             steps {
-                withEnv(['PATH+EXTRA=/var/lib/jenkins_home/gems/bin', 'GEM_HOME=/var/lib/jenkins_home/gems']) {
+                withEnv(['PATH+EXTRA=/var/jenkins_home/gems/bin', 'GEM_HOME=/var/jenkins_home/gems']) {
                   sh 'JEKYLL_ENV=production jekyll build -d /var/www/html'
                 }
             }
